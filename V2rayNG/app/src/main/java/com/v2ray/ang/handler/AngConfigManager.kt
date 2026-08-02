@@ -39,6 +39,8 @@ object AngConfigManager {
             EConfigType.SOCKS.protocolScheme to SocksFmt::parse,
             AppConfig.SOCKS4 to SocksFmt::parse,
             AppConfig.SOCKS5 to SocksFmt::parse,
+            EConfigType.HTTP.protocolScheme to HttpFmt::parse,
+            AppConfig.HTTP to HttpFmt::parse,
             EConfigType.TROJAN.protocolScheme to TrojanFmt::parse,
             EConfigType.VLESS.protocolScheme to VlessFmt::parse,
             EConfigType.WIREGUARD.protocolScheme to WireguardFmt::parse,
@@ -156,6 +158,7 @@ object AngConfigManager {
                 EConfigType.VMESS -> VmessFmt.toUri(config)
                 EConfigType.SHADOWSOCKS -> ShadowsocksFmt.toUri(config)
                 EConfigType.SOCKS -> SocksFmt.toUri(config)
+                EConfigType.HTTP -> HttpFmt.toUri(config)
                 EConfigType.VLESS -> VlessFmt.toUri(config)
                 EConfigType.TROJAN -> TrojanFmt.toUri(config)
                 EConfigType.WIREGUARD -> WireguardFmt.toUri(config)
