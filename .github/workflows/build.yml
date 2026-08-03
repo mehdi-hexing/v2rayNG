@@ -154,7 +154,8 @@ jobs:
 
       - name: Sign APK files
         run: |
-         mkdir -p ~/.gnupg
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
           echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
           gpgconf --kill gpg-agent
 
@@ -168,6 +169,7 @@ jobs:
           done
 
           gpg --armor --export "$KEY" > release-files/v2rayN-public-key.asc
+          
       - name: Upload APKs, signatures and public key to release
         uses: svenstaro/upload-release-action@v2
         with:
