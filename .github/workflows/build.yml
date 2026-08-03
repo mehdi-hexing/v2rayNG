@@ -152,7 +152,7 @@ jobs:
         with:
           path: release
 
-       - name: Sign APK files
+      - name: Sign APK files
         run: |
          mkdir -p ~/.gnupg
           echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
