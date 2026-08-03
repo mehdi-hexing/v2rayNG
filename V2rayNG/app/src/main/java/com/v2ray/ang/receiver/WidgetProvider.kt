@@ -11,6 +11,9 @@ import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.core.CoreServiceManager
 import com.v2ray.ang.core.LauncherManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class WidgetProvider : AppWidgetProvider() {
     /**
@@ -71,7 +74,14 @@ class WidgetProvider : AppWidgetProvider() {
             if (CoreServiceManager.isRunning()) {
                 LauncherManager.stopService(context)
             } else {
-                LauncherManager.startServiceFromToggle(context)
+                val pendingResult = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        LauncherManager.startServiceFromToggle(context)
+                    } finally {
+                        pendingResult.finish()
+                    }
+                }
             }
         } else if (AppConfig.BROADCAST_ACTION_ACTIVITY == intent.action) {
             AppWidgetManager.getInstance(context)?.let { manager ->
