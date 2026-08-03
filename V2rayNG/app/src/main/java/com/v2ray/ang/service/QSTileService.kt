@@ -15,6 +15,9 @@ import com.v2ray.ang.core.LauncherManager
 import com.v2ray.ang.helper.MessageHelper
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.lang.ref.SoftReference
 
 class QSTileService : TileService() {
@@ -76,7 +79,9 @@ class QSTileService : TileService() {
         super.onClick()
         when (qsTile.state) {
             Tile.STATE_INACTIVE -> {
-                LauncherManager.startServiceFromToggle(this)
+                CoroutineScope(Dispatchers.IO).launch {
+                    LauncherManager.startServiceFromToggle(this@QSTileService)
+                }
             }
 
             Tile.STATE_ACTIVE -> {
