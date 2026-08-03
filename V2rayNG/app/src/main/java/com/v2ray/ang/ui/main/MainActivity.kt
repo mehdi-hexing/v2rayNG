@@ -185,7 +185,9 @@ class MainActivity : HelperBaseComponentActivity() {
         ) {
             checkAndRequestPermission(PermissionType.ACCESS_LOCAL_NETWORK) {}
         }
-        LauncherManager.startService(this)
+        lifecycleScope.launch {
+            LauncherManager.startService(this@MainActivity)
+        }
     }
 
     private fun restartV2Ray() {
