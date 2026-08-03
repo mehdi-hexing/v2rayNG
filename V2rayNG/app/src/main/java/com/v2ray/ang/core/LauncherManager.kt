@@ -9,6 +9,8 @@ import com.v2ray.ang.R
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.extension.toast
 import com.v2ray.ang.extension.toastError
+import com.v2ray.ang.extension.toastSuccess
+import com.v2ray.ang.handler.CertificateFingerprintManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.helper.MessageHelper
@@ -18,10 +20,12 @@ import com.v2ray.ang.service.CoreRootService
 import com.v2ray.ang.service.CoreVpnService
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object LauncherManager {
 
-    fun startServiceFromToggle(context: Context): Boolean {
+    suspend fun startServiceFromToggle(context: Context): Boolean {
         if (MmkvManager.getSelectServer().isNullOrEmpty()) {
             context.toast(R.string.app_tile_first_use)
             return false
@@ -36,7 +40,7 @@ object LauncherManager {
         return true
     }
 
-    fun startService(context: Context, guid: String? = null) {
+    suspend fun startService(context: Context, guid: String? = null) {
         LogUtil.i(AppConfig.TAG, "LauncherManager: startService from ${context::class.java.simpleName}")
 
         if (guid != null) {
@@ -57,7 +61,7 @@ object LauncherManager {
     }
 
     @Throws(Exception::class)
-    private fun startContextService(context: Context) {
+    private suspend fun startContextService(context: Context) {
         // Note: isRunning check is removed here to avoid loading Native libraries in the UI process.
         // The check is performed in CoreServiceManager when the service starts in the daemon process.
 
@@ -83,9 +87,25 @@ object LauncherManager {
 
         SettingsManager.refreshRuntimeSocksPort()
 
-        if (config.insecure == true && config.pinnedCA256.isNullOrEmpty()) {
-           context.toastError(R.string.toast_allow_insecure_deprecated)
-            Utils.setClipboard(context, context.getString(R.string.toast_allow_insecure_deprecated))
+        if (config.security == AppConfig.TLS && config.insecure == true && config.pinnedCA256.isNullOrEmpty()) {
+            // Xray-core 26.2.6+ removed "allowInsecure" entirely and rejects any config that sets it,
+            // requiring "pinnedPeerCertSha256" instead. Rather than refuse the connection outright,
+            // fetch the server's live certificate fingerprint once and pin it, so legacy
+            // "Allow insecure" configs keep working transparently on the new core.
+            LogUtil.i(AppConfig.TAG, "LauncherManager: Legacy insecure config detected, attempting to auto-pin certificate for $guid")
+            val sha256 = withContext(Dispatchers.IO) {
+                CertificateFingerprintManager.fetchForManualFill(config)
+            }
+            if (sha256.isNullOrBlank()) {
+                LogUtil.e(AppConfig.TAG, "LauncherManager: Auto-pin failed, refusing to start insecure config without pinned certificate")
+                context.toastError(R.string.toast_allow_insecure_deprecated)
+                error(context.getString(R.string.toast_fetch_cert_sha256_failed))
+            } else {
+                config.pinnedCA256 = sha256
+                MmkvManager.encodeServerConfig(guid, config)
+                LogUtil.i(AppConfig.TAG, "LauncherManager: Auto-pinned certificate for $guid, connection can proceed without allowInsecure")
+                context.toastSuccess(R.string.toast_fetch_cert_sha256_success)
+            }
         }
 
         if (MmkvManager.decodeSettingsBool(AppConfig.PREF_PROXY_SHARING)) {
