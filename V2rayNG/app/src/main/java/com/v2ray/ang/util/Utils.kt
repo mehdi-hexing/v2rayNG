@@ -400,8 +400,34 @@ object Utils {
      * @return The URL string with illegal characters replaced.
      */
     fun fixIllegalUrl(str: String): String {
-        return str.replace(" ", "%20")
+        val spaceFixed = str.replace(" ", "%20")
             .replace("|", "%7C")
+
+        // If the userinfo portion (credentials before the host) contains a stray,
+        // un-escaped '@', java.net.URI can't tell it apart from the userinfo/host
+        // separator and silently fails to parse host/port/userinfo at all (they all
+        // come back null, even though no exception is thrown). This is common for
+        // plain http/socks proxy links whose password wasn't percent-encoded by
+        // whatever tool generated them. Per RFC 3986 the *last* '@' in the authority
+        // is always the real separator, so escape any earlier ones before parsing.
+        val schemeEnd = spaceFixed.indexOf("://")
+        if (schemeEnd == -1) return spaceFixed
+        val authorityStart = schemeEnd + 3
+        var authorityEnd = spaceFixed.length
+        for (delimiter in charArrayOf('/', '?', '#')) {
+            val idx = spaceFixed.indexOf(delimiter, authorityStart)
+            if (idx in authorityStart until authorityEnd) authorityEnd = idx
+        }
+        val authority = spaceFixed.substring(authorityStart, authorityEnd)
+        val lastAt = authority.lastIndexOf('@')
+        if (lastAt <= 0) return spaceFixed
+
+        val userInfo = authority.substring(0, lastAt)
+        val hostPort = authority.substring(lastAt + 1)
+        if (!userInfo.contains("@")) return spaceFixed
+
+        val fixedUserInfo = userInfo.replace("@", "%40")
+        return spaceFixed.substring(0, authorityStart) + fixedUserInfo + "@" + hostPort + spaceFixed.substring(authorityEnd)
     }
 
     /**
