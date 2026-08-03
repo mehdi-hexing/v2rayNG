@@ -4,7 +4,6 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.idnHost
 import com.v2ray.ang.extension.isNotNullEmpty
-import com.v2ray.ang.util.HttpUtil
 import com.v2ray.ang.util.Utils
 import java.net.URI
 
@@ -36,17 +35,12 @@ object HttpFmt : FmtBase() {
     }
 
     fun toUri(config: ProfileItem): String {
-        val userInfo = if (config.username.isNotNullEmpty()) {
-            val pw = "${config.username}:${config.password}"
-            "${Utils.encode(pw, true)}@"
+        val pw = if (config.username.isNotNullEmpty()) {
+            "${config.username}:${config.password}"
         } else {
-            ""
+            ":"
         }
 
-        val host = Utils.getIpv6Address(HttpUtil.toIdnDomain(config.server.orEmpty()))
-        val port = config.serverPort.orEmpty()
-        val remarks = Utils.encodeURIComponent(config.remarks)
-
-        return "$userInfo$host:$port#$remarks"
+        return toUri(config, Utils.encode(pw, true), null)
     }
 }
