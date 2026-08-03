@@ -31,6 +31,7 @@ import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.jvm.Volatile
 import libv2ray.CoreCallbackHandler
 import libv2ray.CoreController
@@ -488,7 +489,7 @@ object CoreServiceManager {
                     LogUtil.i(AppConfig.TAG, "StartCore-Manager: Restart service")
                     serviceControl.stopService()
                     Thread.sleep(500L)
-                    LauncherManager.startService(serviceControl.getService())
+                    runBlocking { LauncherManager.startService(serviceControl.getService()) }
                 }
 
                 AppConfig.MSG_MEASURE_DELAY -> {
