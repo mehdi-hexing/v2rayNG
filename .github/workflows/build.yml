@@ -6,6 +6,11 @@ on:
       release_tag:
         required: false
         type: string
+      xray_core_tag:
+        description: 'AndroidLibXrayLite (Xray core) release tag to build against, e.g. v26.2.6. Leave blank to use the tag pinned by the AndroidLibXrayLite submodule.'
+        required: false
+        type: string
+        default: 'v26.2.6'
   push:
     branches:
       - master
@@ -67,10 +72,17 @@ jobs:
     - name: Fetch AndroidLibXrayLite tag
       run: |
         pushd AndroidLibXrayLite
-        CURRENT_TAG=$(git describe --tags --abbrev=0)
-        echo "Current tag in this repo: $CURRENT_TAG"
-        echo "CURRENT_TAG=$CURRENT_TAG" >> $GITHUB_ENV
+        SUBMODULE_TAG=$(git describe --tags --abbrev=0)
         popd
+        echo "Submodule-pinned tag: $SUBMODULE_TAG"
+        if [ -n "${{ inputs.xray_core_tag }}" ]; then
+          CURRENT_TAG="${{ inputs.xray_core_tag }}"
+          echo "Overriding with requested Xray core tag: $CURRENT_TAG"
+        else
+          CURRENT_TAG="$SUBMODULE_TAG"
+          echo "No xray_core_tag override provided, using submodule tag: $CURRENT_TAG"
+        fi
+        echo "CURRENT_TAG=$CURRENT_TAG" >> $GITHUB_ENV
 
     - name: Download libv2ray
       uses: robinraju/release-downloader@v1.13
