@@ -7,6 +7,9 @@ import android.text.TextUtils
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.core.LauncherManager
 import com.v2ray.ang.util.LogUtil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class TaskerReceiver : BroadcastReceiver() {
 
@@ -27,10 +30,17 @@ class TaskerReceiver : BroadcastReceiver() {
             if (switch == null || TextUtils.isEmpty(guid)) {
                 return
             } else if (switch) {
-                if (guid == AppConfig.TASKER_DEFAULT_GUID) {
-                    LauncherManager.startServiceFromToggle(context)
-                } else {
-                    LauncherManager.startService(context, guid)
+                val pendingResult = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        if (guid == AppConfig.TASKER_DEFAULT_GUID) {
+                            LauncherManager.startServiceFromToggle(context)
+                        } else {
+                            LauncherManager.startService(context, guid)
+                        }
+                    } finally {
+                        pendingResult.finish()
+                    }
                 }
             } else {
                 LauncherManager.stopService(context)
