@@ -9,6 +9,9 @@ import com.v2ray.ang.core.LauncherManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SubscriptionUpdater
 import com.v2ray.ang.util.LogUtil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class BootReceiver : BroadcastReceiver() {
     /**
@@ -56,7 +59,14 @@ class BootReceiver : BroadcastReceiver() {
         }
 
         LogUtil.i(AppConfig.TAG, "BootReceiver: Starting V2Ray service")
-        LauncherManager.startService(context)
-        SubscriptionUpdater.sync(context)
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                LauncherManager.startService(context)
+                SubscriptionUpdater.sync(context)
+            } finally {
+                pendingResult.finish()
+            }
+        }
     }
 }
